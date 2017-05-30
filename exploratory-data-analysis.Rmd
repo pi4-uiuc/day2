@@ -113,14 +113,15 @@ yields <- betydb_query(table = 'yields', limit = 'none') %>%
   left_join(species, by = 'specie_id') %>%
   left_join(sites, by = 'site_id') 
 
-managements_treatments <- tbl(bety, 'managements_treatments') %>%
+managements_treatments <- #tbl(bety, 'managements_treatments') %>%
+  betydb_query(table = 'managements_treatments') %>% 
   select(treatment_id, management_id)
 
-treatments <- tbl(bety, 'treatments') %>% 
+treatments <- betydb_query(table = 'treatments') %>% 
   dplyr::mutate(treatment_id = id) %>% 
   dplyr::select(treatment_id, name, definition, control)
 
-managements <- tbl(bety, 'managements') %>%
+managements <- betydb_query(table = 'managements') %>%
   filter(mgmttype %in% c('fertilizer_N', 'fertilizer_N_rate', 'planting', 'irrigation')) %>%
   dplyr::mutate(management_id = id) %>%
   dplyr::select(management_id, date, mgmttype, level, units) %>%
