@@ -1,0 +1,88 @@
+---
+title: "Exploratory Data Analysis"
+author: "David LeBauer"
+date: "5/30/2017"
+output:
+  html_document: default
+  html_notebook: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
+```
+
+## Load biofuel data from betydb.org
+
+```{r load-data, message=FALSE, }
+salix <- read_csv('data/salix.csv')
+```
+```{r load-data-loop, message=FALSE}
+all_genera <- list()
+for(genus in c('salix', 'panicum', 'miscanthus', 'populus')){
+  all_genera[[genus]] <- read_csv(paste0('data/', genus, '.csv'))
+  
+  all_genera[[genus]]$mean <- as.numeric(all_genera[[genus]]$mean)
+}
+all_genera_df <- dplyr::bind_rows(all_genera)
+```
+
+
+## Load Sorghum data from terraref.ncsa.illinois.edu/bety
+
+```{r db-connection}
+library(RPostgreSQL)
+
+dbcon <- dbConnect(RPostgreSQL::PostgreSQL(),
+                dbname = "bety", 
+                password = 'bety', 
+                host = 'terra-bety.default', 
+                user = 'bety', 
+                port = 5432)
+
+```
+
+
+```{sql basic-query, connection = dbcon}
+select variables.name, mean 
+  from traits join variables 
+  on traits.variable_id = variables.id
+  limit 10;
+
+```
+
+```{sql trait-counts, connection = dbcon}
+select variables.name, count(*) as n 
+  from traits join variables 
+  on traits.variable_id = variables.id
+  group by variables.name
+  order by n desc;
+
+```
+
+
+```{r}
+library(dplyr)
+
+bety_src <- src_postgres(dbname = "bety", 
+                password = 'bety', 
+                host = 'terra-bety.default', 
+                user = 'bety', 
+                port = 5432)
+
+traits <- tbl(bety_src, 'traits')
+
+variables <- tbl(bety_src, 'variables') %>% 
+  mutate(variable_id = id)
+
+traits_variables <- traits %>% 
+  left_join(variables, by = 'variable_id') %>% 
+  select(name, mean) %>% 
+  collect
+
+dim(traits_variables)
+head(traits_variables)
+
+traitsview <- tbl(bety_src, 'traits_and_yields_view')
+
+dim(traitsview)
+```
