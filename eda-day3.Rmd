@@ -1,0 +1,108 @@
+---
+title: "Day 3 EDA"
+output: html_notebook
+---
+
+## Open connection 
+
+
+```{r}
+library(dplyr)
+
+bety_src <- src_postgres(dbname = "bety", 
+                password = 'bety', 
+                host = 'terra-bety.default', 
+                user = 'bety', 
+                port = 5432)
+
+```
+
+
+### filtering / subsetting
+
+```{r}
+
+traits <- tbl(bety_src, 'traits', n=Inf)
+
+variables <- tbl(bety_src, 'variables') %>%
+  mutate(variable_id = id)
+
+sites <- tbl(bety_src, 'sites') %>%
+  mutate(site_id = id)
+
+#cultivars <- tbl(bety_src, 'cultivars') %>%
+#  mutate(cultivar_id = id, cultivar = 'name')
+
+traits_variables <- traits %>% 
+  left_join(variables, by = 'variable_id') %>%
+  left_join(sites, by = 'site_id') %>% 
+  select(sitename, date, name, mean, cultivar_id) %>% 
+  filter(name == 'canopy_height') %>% collect
+
+traits_variables_season_2 <- traits_variables %>%
+    filter(grepl("Season 2",sitename))
+
+```
+
+### grouping and summarizing
+
+```{r}
+traits_variables_season_2 %>% 
+  group_by(date) %>% 
+  summarize(mean = mean(mean), n =n())
+
+canopy_heights <- traits_variables_season_2 %>% 
+  group_by(date, cultivar_id) %>% 
+  summarize(mean = mean(mean), n =n())
+
+
+```
+
+
+### Plotting with ggplot
+
+```{r}
+library(ggplot2)
+
+ggplot(data = traits_variables_season_2,
+       aes(x = date, y = mean, group = cultivar_id)) +
+  geom_smooth(se = FALSE, alpha = 0.25, size = 0.5) +
+  geom_point(alpha = 0.25, size = 0.5, position = 'jitter')
+
+
+```
+
+
+```{r}
+
+height_season_2_subset <- traits_variables_season_2 %>% 
+  filter(cultivar_id < min(traits_variables_season_2$cultivar_id)+25)
+
+# how many unique values of cultivar_id?
+
+#height_season_2_subset %>% group_by(cultivar_id, date) %>% summarize(n())
+
+
+ggplot(data = height_season_2_subset,
+       aes(x = date, y = mean, color = as.factor(cultivar_id))) +
+  geom_smooth(se = FALSE, alpha = 0.25, size = 0.5) +
+  geom_point(alpha = 0.25, size = 0.5)
+
+```
+
+### Faceting
+
+```{r}
+ggplot(data = height_season_2_subset,
+       aes(x = date, y = mean)) +
+  geom_smooth(se = FALSE) +
+  geom_point() +
+  facet_wrap(~cultivar_id) +
+  ggthemes::theme_tufte()
+
+# geom_boxplot
+# geom_violin
+# geom_histogram
+
+```
+

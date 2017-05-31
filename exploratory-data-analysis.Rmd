@@ -82,9 +82,6 @@ traits_variables <- traits %>%
 dim(traits_variables)
 head(traits_variables)
 
-traitsview <- tbl(bety_src, 'traits_and_yields_view')
-
-dim(traitsview)
 ```
 
 
@@ -98,7 +95,7 @@ Here we are using the traits package to access the betydb.org website
 library(traits)
 library(dplyr)
 
-options(#betydb_key = readLines('~/.betykey', warn = FALSE),
+options(betydb_key = readLines('~/.betykey', warn = FALSE),
         betydb_url = "https://betydb.org",
         betydb_api_version = 'beta')
 
@@ -127,7 +124,6 @@ managements <- betydb_query(table = 'managements') %>%
   dplyr::select(management_id, date, mgmttype, level, units) %>%
   left_join(managements_treatments, by = 'management_id') %>%
   left_join(treatments, by = 'treatment_id') 
-
 
 nitrogen <- managements %>% 
   filter(mgmttype == "fertilizer_N_rate") %>%
